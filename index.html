@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Corazones - El juego de cartas clásico</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(145deg, #1a472a 0%, #0e2a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Contenedor principal */
+        .game-container {
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 64px;
+            padding: 20px 25px 30px 25px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(1px);
+        }
+
+        .game-panel {
+            background: #2b6e3c;
+            border-radius: 48px;
+            padding: 20px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2), 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Tablero */
+        .board {
+            background: #1e5a2e;
+            border-radius: 40px;
+            padding: 20px;
+            box-shadow: inset 0 0 0 2px rgba(255, 255, 240, 0.2), inset 0 0 0 6px #2a6e3a;
+        }
+
+        /* Área de oponentes (arriba y laterales) */
+        .opponents-area {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .opponent {
+            background: #2a5e38;
+            border-radius: 28px;
+            padding: 15px 10px;
+            text-align: center;
+            flex: 1;
+            box-shadow: 0 6px 0 #0f3a1a;
+            backdrop-filter: blur(2px);
+        }
+
+        .opponent-name {
+            font-weight: bold;
+            color: #FFE3B0;
+            text-shadow: 1px 1px 0 #6b3e1a;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+
+        .opponent-cards {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #F9E0A0;
+            background: #1d4629;
+            display: inline-block;
+            padding: 5px 16px;
+            border-radius: 40px;
+            margin-top: 8px;
+            font-family: monospace;
+        }
+
+        /* Zona de baza (cartas jugadas) */
+        .trick-area {
+            background: #194d28;
+            border-radius: 55px;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            min-height: 140px;
+            box-shadow: inset 0 0 0 3px #306e3e, 0 5px 10px black;
+        }
+
+        .trick-card {
+            background: white;
+            width: 85px;
+            height: 120px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: bold;
+            box-shadow: 3px 4px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.1s ease;
+            font-family: 'Segoe UI', 'Arial';
+        }
+
+        /* Mano del jugador */
+        .player-hand {
+            background: #327a46;
+            border-radius: 50px;
+            padding: 20px 15px;
+            margin-top: 20px;
+            box-shadow: inset 0 0 0 2px #5caa6e, 0 8px 12px black;
+        }
+
+        .hand-title {
+            color: #FFE1A0;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding-left: 12px;
+        }
+
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .card {
+            width: 90px;
+            height: 126px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s linear;
+            box-shadow: 2px 5px 10px rgba(0, 0, 0, 0.3);
+            font-family: 'Segoe UI', 'Arial';
+            border: 1px solid #ddd;
+        }
+
+        .card.selectable:hover {
+            transform: translateY(-12px);
+            filter: brightness(1.02);
+            box-shadow: 0 12px 18px rgba(0, 0, 0, 0.4);
+        }
+
+        .card.disabled {
+            opacity: 0.6;
+            filter: grayscale(0.2);
+            cursor: not-allowed;
+        }
+
+        /* Info y botones */
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1f442b;
+            margin-top: 20px;
+            padding: 12px 25px;
+            border-radius: 60px;
+            color: #F9E6CF;
+            font-weight: bold;
+        }
+
+        .scores {
+            display: flex;
+            gap: 24px;
+            background: #0e2a18;
+            padding: 6px 18px;
+            border-radius: 40px;
+        }
+
+        .score-item {
+            font-size: 1rem;
+        }
+
+        .score-value {
+            font-weight: 800;
+            font-size: 1.3rem;
+            margin-left: 8px;
+            color: #FFD966;
+        }
+
+        button {
+            background: #FFC857;
+            border: none;
+            padding: 8px 20px;
+            font-weight: bold;
+            font-size: 1rem;
+            border-radius: 36px;
+            cursor: pointer;
+            transition: 0.1s;
+            font-family: inherit;
+            box-shadow: 0 3px 0 #a05e15;
+            color: #2c2c2c;
+        }
+
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #a05e15;
+        }
+
+        .message-area {
+            background: #00000088;
+            padding: 6px 15px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(4px);
+        }
+
+        @media (max-width: 700px) {
+
+            .card,
+            .trick-card {
+                width: 70px;
+                height: 98px;
+                font-size: 1.8rem;
+            }
+
+            .opponent-cards {
+                font-size: 1.2rem;
+            }
+
+            .scores {
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <div class="game-panel">
+            <div class="board">
+                <!-- Oponentes: Norte, Este, Oeste -->
+                <div class="opponents-area">
+                    <div class="opponent" id="opponent-west">
+                        <div class="opponent-name">◀ OESTE</div>
+                        <div class="opponent-cards" id="west-count">13</div>
+                    </div>
+                    <div class="opponent" id="opponent-north">
+                        <div class="opponent-name">NORTE ▲</div>
+                        <div class="opponent-cards" id="north-count">13</div>
+                    </div>
+                    <div class="opponent" id="opponent-east">
+                        <div class="opponent-name">ESTE ▶</div>
+                        <div class="opponent-cards" id="east-count">13</div>
+                    </div>
+                </div>
+
+                <!-- Baza central -->
+                <div class="trick-area" id="trick-area">
+                    <div style="color:#ffefb0; font-size:0.8rem; text-align:center; width:100%;" id="trick-label">♥ Baza
+                        actual ♥</div>
+                </div>
+
+                <!-- Mano del jugador (Sur) -->
+                <div class="player-hand">
+                    <div class="hand-title">🃟 TU MANO (SUR) 🃟</div>
+                    <div class="cards-container" id="player-hand"></div>
+                </div>
+
+                <!-- Info, puntuaciones y acciones -->
+                <div class="info-bar">
+                    <div class="scores" id="scoreboard">
+                        <span>🏆 TÚ: <span id="player-score">0</span></span>
+                        <span>🧙 NORTE: <span id="north-score">0</span></span>
+                        <span>⚔️ ESTE: <span id="east-score">0</span></span>
+                        <span>🌲 OESTE: <span id="west-score">0</span></span>
+                    </div>
+                    <div class="message-area" id="game-message">♠️ Haz clic en una carta para jugar</div>
+                    <button id="reset-game">🔄 Reiniciar partida</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --------------------------------------------------------------
+        // LÓGICA DEL JUEGO CORAZONES (Hearts)
+        // Reglas: gana el que menos puntos (1 punto por corazón, 13 puntos Q♠)
+        // Se juega hasta que alguien alcanza 100 puntos o se reinicia.
+        // El jugador que no puede seguir el palo puede jugar cualquier carta.
+        // Pases automáticos. Turnos rotativos.
+        // --------------------------------------------------------------
+
+        // Palos y valores
+        const SUITS = ['♠', '♥', '♣', '♦'];
+        const SUIT_NAMES = { '♠': 'Espadas', '♥': 'Corazones', '♣': 'Tréboles', '♦': 'Diamantes' };
+        const RANK = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+        const RANK_VALUE = { '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14 };
+
+        // Puntos asociados: Corazón vale 1, Q♠ vale 13
+        function getCardPoints(card) {
+            if (card.suit === '♥') return 1;
+            if (card.suit === '♠' && card.rank === 'Q') return 13;
+            return 0;
+        }
+
+        class Card {
+            constructor(suit, rank) {
+                this.suit = suit;
+                this.rank = rank;
+            }
+            getDisplay() {
+                return `${this.rank}${this.suit}`;
+            }
+            getKey() {
+                return this.suit + this.rank;
+            }
+        }
+
+        // Mazo completo (52 cartas)
+        function createDeck() {
+            let deck = [];
+            for (let s of SUITS) {
+                for (let r of RANK) {
+                    deck.push(new Card(s, r));
+                }
+            }
+            return shuffle(deck);
+        }
+
+        function shuffle(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            return deck;
+        }
+
+        // Modelo del juego
+        class HeartsGame {
+            constructor() {
+                this.players = [
+                    { name: "Tú (Sur)", id: 0, hand: [], score: 0, isHuman: true },
+                    { name: "Norte", id: 1, hand: [], score: 0, isHuman: false },
+                    { name: "Este", id: 2, hand: [], score: 0, isHuman: false },
+                    { name: "Oeste", id: 3, hand: [], score: 0, isHuman: false }
+                ];
+                this.currentTrick = [];   // cartas jugadas [{card, playerId}]
+                this.currentPlayerIndex = 0;   // quién juega (0=Sur)
+                this.firstPlayerOfTrick = 0;
+                this.leadSuit = null;
+                this.gameActive = true;
+                this.roundActive = true;
+                this.passedCards = false; // para saber si ya se pasaron cartas (simplificado: reparto inicial)
+                this.roundWinner = null;
+                this.roundPoints = [0, 0, 0, 0];
+                this.deck = [];
+                this.waitingForHuman = false;
+                this.shootingMoon = false;
+                this.initRound();
+            }
+
+            initRound() {
+                // Repartir 13 cartas a cada jugador
+                this.deck = createDeck();
+                for (let i = 0; i < 4; i++) this.players[i].hand = [];
+                for (let i = 0; i < 52; i++) {
+                    this.players[i % 4].hand.push(this.deck[i]);
+                }
+                // Ordenar manos (para el jugador humano se ve lindo)
+                for (let p of this.players) {
+                    p.hand.sort((a, b) => RANK_VALUE[a.rank] - RANK_VALUE[b.rank] || SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit));
+                }
+                // Regla: el jugador que tiene el 2 de tréboles arranca la primera baza
+                let starter = -1;
+                for (let i = 0; i < 4; i++) {
+                    if (this.players[i].hand.some(c => c.suit === '♣' && c.rank === '2')) {
+                        starter = i;
+                        break;
+                    }
+                }
+                if (starter === -1) starter = 0;
+                this.currentPlayerIndex = starter;
+                this.firstPlayerOfTrick = starter;
+                this.leadSuit = null;
+                this.currentTrick = [];
+                this.roundActive = true;
+                this.roundPoints = [0, 0, 0, 0];
+                this.waitingForHuman = (this.currentPlayerIndex === 0);
+                // mensaje especial si arranca humano
+            }
+
+            // Validar si se puede jugar carta (seguir palo)
+            canPlayCard(playerId, card) {
+                if (!this.roundActive) return false;
+                if (this.currentPlayerIndex !== playerId) return false;
+                const playerHand = this.players[playerId].hand;
+                if (!playerHand.includes(card)) return false;
+                // Primera jugada de la ronda global: primera baza, no se puede jugar corazón hasta que se "rompan"?
+                // Regla clásica: no se pueden jugar corazones en la primera baza a menos que solo tengas corazones.
+                const isFirstTrickOverall = (this.currentTrick.length === 0 && this.firstPlayerOfTrick === this.currentPlayerIndex && this.leadSuit === null);
+                if (isFirstTrickOverall) {
+                    // primera jugada de la partida: no se pueden jugar corazones ni la dama de espadas? En hearts no se puede jugar corazón en la primera baza
+                    if (card.suit === '♥') return false;
+                    // Q♠ tampoco está prohibida específicamente? pero por tradición mejor evitar, aunque no es norma común, pero sí corazón prohibido.
+                }
+                // Si no es el primero en la baza y hay palo lider:
+                if (this.leadSuit !== null && this.currentTrick.length > 0) {
+                    const hasSuit = playerHand.some(c => c.suit === this.leadSuit);
+                    if (hasSuit && card.suit !== this.leadSuit) return false;
+                }
+                return true;
+            }
+
+            // Jugar carta
+            playCard(playerId, card) {
+                if (!this.canPlayCard(playerId, card)) return false;
+                // remover de mano
+                const player = this.players[playerId];
+                const idx = player.hand.findIndex(c => c === card);
+                if (idx !== -1) player.hand.splice(idx, 1);
+                this.currentTrick.push({ card, playerId });
+                // Cambiar siguiente jugador
+                let nextPlayer = (this.currentPlayerIndex + 1) % 4;
+                // Si se completó la baza (4 cartas)
+                if (this.currentTrick.length === 4) {
+                    this.resolveTrick();
+                    // después de resolver, se define nuevo currentPlayerIndex = ganador de baza
+                    if (!this.roundActive) this.endRound();
+                    else {
+                        // si la ronda sigue, actualizar waitingForHuman
+                        this.waitingForHuman = (this.currentPlayerIndex === 0);
+                    }
+                } else {
+                    this.currentPlayerIndex = nextPlayer;
+                    this.waitingForHuman = (this.currentPlayerIndex === 0);
+                }
+                return true;
+            }
+
+            resolveTrick() {
+                // determinar ganador de la baza según palo líder (primera carta jugada)
+                const leadCard = this.currentTrick[0].card;
+                const leadSuitTrick = leadCard.suit;
+                let winnerIdx = 0;
+                let highestRankValue = RANK_VALUE[leadCard.rank];
+                for (let i = 1; i < this.currentTrick.length; i++) {
+                    const c = this.currentTrick[i].card;
+                    if (c.suit === leadSuitTrick && RANK_VALUE[c.rank] > highestRankValue) {
+                        highestRankValue = RANK_VALUE[c.rank];
+                        winnerIdx = i;
+                    }
+                }
+                const winnerPlayerId = this.currentTrick[winnerIdx].playerId;
+                // Sumar puntos de la baza al ganador
+                let trickPoints = 0;
+                for (let play of this.currentTrick) {
+                    trickPoints += getCardPoints(play.card);
+                }
+                this.roundPoints[winnerPlayerId] += trickPoints;
+                // Actualizar siguiente ronda: el ganador inicia nueva baza
+                this.currentPlayerIndex = winnerPlayerId;
+                this.firstPlayerOfTrick = winnerPlayerId;
+                this.leadSuit = null;
+                this.currentTrick = [];
+                // Verificar si todos se quedaron sin cartas
+                let allEmpty = this.players.every(p => p.hand.length === 0);
+                if (allEmpty) {
+                    this.endRound();
+                }
+            }
+
+            endRound() {
+                this.roundActive = false;
+                // Ajustar puntos al marcador total y verificar luna (si alguien tomó todas las corazones+Q♠)
+                let totalPoints = this.roundPoints.reduce((a, b) => a + b, 0);
+                // Si alguien hizo 26 puntos (todas las penalizaciones) -> shooting the moon
+                for (let i = 0; i < 4; i++) {
+                    if (this.roundPoints[i] === 26) {
+                        // El resto recibe 26, él recibe 0
+                        for (let j = 0; j < 4; j++) {
+                            if (j !== i) this.players[j].score += 26;
+                        }
+                        this.players[i].score += 0;
+                        this.shootingMoon = true;
+                        break;
+                    }
+                }
+                if (!this.shootingMoon) {
+                    for (let i = 0; i < 4; i++) {
+                        this.players[i].score += this.roundPoints[i];
+                    }
+                }
+                this.shootingMoon = false;
+                // revisar si alguien llega a 100 o más
+                let gameOver = this.players.some(p => p.score >= 100);
+                if (gameOver) {
+                    this.gameActive = false;
+                } else {
+                    // Nueva ronda
+                    this.initRound();
+                }
+            }
+
+            // IA simple: juega la primera carta válida (prioriza no dar puntos innecesarios)
+            // Para IA oponente, elegir carta según reglas
+            getAIMove(playerId) {
+                const player = this.players[playerId];
+                const hand = [...player.hand];
+                if (hand.length === 0) return null;
+                // Criterio: si hay palo lider, seguir ese palo, sino elegir carta de menor peligro (evitar corazones y Q♠)
+                let playable = hand.filter(c => {
+                    if (this.leadSuit !== null && this.currentTrick.length > 0) {
+                        const hasSuit = hand.some(c2 => c2.suit === this.leadSuit);
+                        if (hasSuit && c.suit !== this.leadSuit) return false;
+                    }
+                    // primera baza prohibición corazón
+                    const isFirstTrickOverall = (this.currentTrick.length === 0 && this.firstPlayerOfTrick === playerId && this.leadSuit === null);
+                    if (isFirstTrickOverall && c.suit === '♥') return false;
+                    return true;
+                });
+                if (playable.length === 0) playable = hand; // fallback
+
+                // preferir cartas seguras: evitar corazones y Q♠ cuando se pueda
+                let safeCards = playable.filter(c => getCardPoints(c) === 0);
+                if (safeCards.length > 0) playable = safeCards;
+                // ordenar por puntos (menor prioridad dar puntos)
+                playable.sort((a, b) => getCardPoints(a) - getCardPoints(b));
+                return playable[0];
+            }
+
+            // ejecutar turno IA
+            aiTurn() {
+                if (!this.roundActive) return;
+                if (this.waitingForHuman) return;
+                if (this.currentPlayerIndex !== 0 && !this.players[this.currentPlayerIndex].isHuman) {
+                    const aiCard = this.getAIMove(this.currentPlayerIndex);
+                    if (aiCard) {
+                        this.playCard(this.currentPlayerIndex, aiCard);
+                    }
+                }
+            }
+        }
+
+        // ---------------------- UI -------------------------
+        let currentGame = new HeartsGame();
+        let selectedCard = null;
+
+        function renderGame() {
+            renderScores();
+            renderPlayerHand();
+            renderOpponentCounts();
+            renderTrick();
+            updateMessage();
+            // Si es turno de IA y juego activo, ejecutar tras breve delay
+            if (currentGame.roundActive && !currentGame.waitingForHuman && currentGame.gameActive) {
+                setTimeout(() => {
+                    if (currentGame && !currentGame.waitingForHuman && currentGame.roundActive && currentGame.gameActive) {
+                        currentGame.aiTurn();
+                        renderGame();
+                    }
+                }, 180);
+            }
+            // si el juego termina
+            if (!currentGame.gameActive && currentGame.players.some(p => p.score >= 100)) {
+                let winner = currentGame.players.reduce((best, p) => p.score < best.score ? p : best, currentGame.players[0]);
+                document.getElementById('game-message').innerHTML = `🏆 ¡JUEGO TERMINADO! Gana ${winner.name} con ${winner.score} puntos. Presiona Reiniciar. 🏆`;
+            }
+        }
+
+        function renderScores() {
+            document.getElementById('player-score').innerText = currentGame.players[0].score;
+            document.getElementById('north-score').innerText = currentGame.players[1].score;
+            document.getElementById('east-score').innerText = currentGame.players[2].score;
+            document.getElementById('west-score').innerText = currentGame.players[3].score;
+        }
+
+        function renderOpponentCounts() {
+            document.getElementById('north-count').innerText = currentGame.players[1].hand.length;
+            document.getElementById('east-count').innerText = currentGame.players[2].hand.length;
+            document.getElementById('west-count').innerText = currentGame.players[3].hand.length;
+        }
+
+        function renderPlayerHand() {
+            const container = document.getElementById('player-hand');
+            container.innerHTML = '';
+            const hand = currentGame.players[0].hand;
+            if (!hand) return;
+            hand.forEach(card => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                const isPlayable = currentGame.roundActive && currentGame.waitingForHuman && currentGame.canPlayCard(0, card);
+                if (isPlayable) cardDiv.classList.add('selectable');
+                else cardDiv.classList.add('disabled');
+                // mostrar color según palo
+                const color = (card.suit === '♥' || card.suit === '♦') ? '#c33' : '#222';
+                cardDiv.style.color = color;
+                cardDiv.innerHTML = `<div style="font-size:2rem;">${card.rank}${card.suit}</div>`;
+                if (isPlayable) {
+                    cardDiv.onclick = () => {
+                        if (currentGame.roundActive && currentGame.waitingForHuman && currentGame.canPlayCard(0, card)) {
+                            currentGame.playCard(0, card);
+                            renderGame();
+                        } else {
+                            document.getElementById('game-message').innerHTML = "❌ No puedes jugar esa carta ahora.";
+                            setTimeout(() => updateMessage(), 1000);
+                        }
+                    };
+                }
+                container.appendChild(cardDiv);
+            });
+        }
+
+        function renderTrick() {
+            const trickDiv = document.getElementById('trick-area');
+            trickDiv.innerHTML = '<div style="color:#ffefb0; font-size:0.8rem; text-align:center; width:100%;" id="trick-label">♥ Baza actual ♥</div>';
+            if (currentGame.currentTrick.length) {
+                for (let play of currentGame.currentTrick) {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'trick-card';
+                    const col = (play.card.suit === '♥' || play.card.suit === '♦') ? '#c33' : '#1f2f3f';
+                    cardDiv.style.color = col;
+                    cardDiv.style.background = '#fff8f0';
+                    cardDiv.innerHTML = `<div style="font-size:1.8rem;">${play.card.rank}${play.card.suit}</div><small style="font-size:0.7rem;">${currentGame.players[play.playerId].name}</small>`;
+                    trickDiv.appendChild(cardDiv);
+                }
+            } else {
+                let infoSpan = document.createElement('div');
+                infoSpan.style.width = '100%';
+                infoSpan.style.textAlign = 'center';
+                infoSpan.style.color = '#f9e2a1';
+                infoSpan.innerText = currentGame.leadSuit ? `Palo líder: ${SUIT_NAMES[currentGame.leadSuit] || ''}` : 'Esperando jugada...';
+                trickDiv.appendChild(infoSpan);
+            }
+            // actualizar leadSuit visual
+            if (currentGame.currentTrick.length > 0 && !currentGame.leadSuit) {
+                currentGame.leadSuit = currentGame.currentTrick[0].card.suit;
+            } else if (currentGame.currentTrick.length === 0) currentGame.leadSuit = null;
+        }
+
+        function updateMessage() {
+            const msgDiv = document.getElementById('game-message');
+            if (!currentGame.gameActive) return;
+            if (!currentGame.roundActive) {
+                msgDiv.innerHTML = "🔄 Calculando puntuaciones... Nueva ronda en curso";
+                return;
+            }
+            if (currentGame.waitingForHuman) {
+                msgDiv.innerHTML = "🎴 Tu turno: elige una carta de tu mano";
+            } else {
+                let playerTurn = currentGame.players[currentGame.currentPlayerIndex].name;
+                msgDiv.innerHTML = `🤖 Turno de ${playerTurn}...`;
+            }
+            if (currentGame.currentTrick.length === 0 && currentGame.firstPlayerOfTrick === 0 && currentGame.currentPlayerIndex === 0)
+                msgDiv.innerHTML = "♣️ Comienza la baza. ¡Juega una carta! (No corazones en primera)";
+        }
+
+        function resetGame() {
+            currentGame = new HeartsGame();
+            renderGame();
+        }
+
+        document.getElementById('reset-game').addEventListener('click', () => {
+            resetGame();
+        });
+
+        // iniciar render
+        renderGame();
+        // si IA tiene que arrancar inmediatamente si el turno es de IA al inicio (ejemplo: el 2 de tréboles puede ser de IA)
+        setTimeout(() => {
+            if (currentGame && !currentGame.waitingForHuman && currentGame.roundActive) {
+                currentGame.aiTurn();
+                renderGame();
+            }
+        }, 300);
+    </script>
+</body>
+
+</html>
